@@ -6,15 +6,17 @@ use App\Http\Requests\StoreHotelRequest;
 use App\Http\Requests\UpdateHotelRequest;
 use App\Http\Resources\HotelResource;
 use App\Services\HotelService;
+use Illuminate\Http\Request;
 
 class HotelController extends Controller
 {
     public function __construct(private HotelService $hotelService) {}
 
-    public function index()
-    {
-        return HotelResource::collection($this->hotelService->getAll());
-    }
+    public function index(Request $request)
+{
+    $filters = $request->only(['search', 'city', 'stars', 'per_page']);
+    return HotelResource::collection($this->hotelService->getAll($filters));
+}
 
     public function store(StoreHotelRequest $request)
     {

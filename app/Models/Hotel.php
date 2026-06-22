@@ -18,6 +18,11 @@ class Hotel extends Model
         'prix_unitaire',
     ];
 
+    protected $casts = [
+        'photos'        => 'array',
+        'prix_unitaire' => 'float',
+    ];
+
     public function reservations()
     {
         return $this->hasMany(Reservation::class, 'id_hotel');

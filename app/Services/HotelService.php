@@ -3,13 +3,27 @@
 namespace App\Services;
 
 use App\Models\Hotel;
-use Illuminate\Database\Eloquent\Collection;
 
 class HotelService
 {
-    public function getAll(): Collection
+    public function getAll(array $filters = [])
     {
-        return Hotel::with('formules')->get();
+        $query = Hotel::query();
+
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('nom', 'like', "%{$filters['search']}%")
+                  ->orWhere('adresse', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        if (!empty($filters['categorie'])) {
+            $query->where('categorie', $filters['categorie']);
+        }
+
+        $perPage = $filters['per_page'] ?? 9;
+
+        return $query->paginate($perPage);
     }
 
     public function find(int $id): Hotel
