@@ -8,10 +8,16 @@ use Illuminate\Validation\ValidationException;
 
 class ReservationService
 {
-    public function getAll(): Collection
-    {
-        return Reservation::with(['user', 'hotel'])->get();
+    public function getAll(array $filters = [])
+{
+    $query = Reservation::with(['user', 'hotel']);
+
+    if (!empty($filters['id_user'])) {
+        $query->where('id_user', $filters['id_user']);
     }
+
+    return $query->get();
+}
 
     public function find(int $id): Reservation
     {

@@ -6,14 +6,16 @@ use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\UpdateReservationRequest;
 use App\Http\Resources\ReservationResource;
 use App\Services\ReservationService;
+use Illuminate\Http\Request;
 
 class ReservationController extends Controller
 {
     public function __construct(private ReservationService $reservationService) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        return ReservationResource::collection($this->reservationService->getAll());
+        $reservations = $this->reservationService->getAll($request->only(['id_user']));
+        return ReservationResource::collection($reservations);
     }
 
     public function store(StoreReservationRequest $request)

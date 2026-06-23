@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class FormuleTarif extends Model
 {
@@ -22,6 +23,14 @@ class FormuleTarif extends Model
         'periode_fin',
     ];
 
+    protected $casts = [
+        'periode_debut' => 'date',
+        'periode_fin'   => 'date',
+        'prix_chambre'  => 'float',
+        'prix_formule'  => 'float',
+        'promotion'     => 'float',
+    ];
+
     public function hotel()
     {
         return $this->belongsTo(Hotel::class);
@@ -30,7 +39,7 @@ class FormuleTarif extends Model
     public function getPrixAvecPromotionAttribute()
     {
         if ($this->promotion > 0) {
-            return $this->prix_formule * (1 - $this->promotion / 100);
+            return round($this->prix_formule * (1 - $this->promotion / 100), 2);
         }
 
         return $this->prix_formule;
