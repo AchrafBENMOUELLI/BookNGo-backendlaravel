@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Reservation;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Http;
 
 class ReservationService
 {
@@ -25,11 +26,27 @@ class ReservationService
     }
 
     public function create(array $data): Reservation
-    {
-        $this->checkAvailability($data['id_hotel'], $data['date_arrivee'], $data['date_depart']);
+{
+    $this->checkAvailability($data['id_hotel'], $data['date_arrivee'], $data['date_depart']);
 
-        return Reservation::create($data);
-    }
+    $reservation = Reservation::create($data);
+
+    // Load relations for the webhook
+    $reservation->load(['user', 'hotel']);
+
+    // Trigger n8n workflow
+    Http::post(config('services.n8n.webhook_url'), [
+        'user_name'    => $reservation->user->name,
+        'email'        => $reservation->user->email,
+        'hotel_nom'    => $reservation->hotel->nom,
+        'date_arrivee' => $reservation->date_arrivee,
+        'date_depart'  => $reservation->date_depart,
+        'nbr_chambre'  => $reservation->nbr_chambre,
+        'prix'         => $reservation->prix,
+    ]);
+
+    return $reservation;
+}
 
     public function update(int $id, array $data): Reservation
     {
