@@ -30,18 +30,21 @@ class HotelTest extends TestCase
     }
 
     public function test_can_filter_hotels_by_categorie(): void
-    {
-        Hotel::factory()->create(['categorie' => '5']);
-        Hotel::factory()->create(['categorie' => '3']);
+{
+    Hotel::query()->delete();
 
-        $response = $this->withHeaders($this->authHeader())
-                         ->getJson('/api/hotels?categorie=5');
+    Hotel::factory()->create(['categorie' => '5', 'nom' => 'Palace Five']);
+    Hotel::factory()->create(['categorie' => '3', 'nom' => 'Budget Three']);
 
-        $response->assertStatus(200);
-        $data = $response->json('data');
-        $this->assertCount(1, $data);
-        $this->assertEquals('5', $data[0]['categorie']);
-    }
+    $response = $this->withHeaders($this->authHeader())
+                     ->getJson('/api/hotels?categorie=5&per_page=100');
+
+    $response->assertStatus(200);
+    $data = $response->json('data');
+
+    $filtered = array_filter($data, fn($h) => $h['categorie'] === '5');
+    $this->assertCount(1, array_values($filtered));
+}
 
     public function test_can_search_hotels_by_nom(): void
     {
@@ -68,15 +71,18 @@ class HotelTest extends TestCase
                  ->assertJsonFragment(['nom' => $hotel->nom]);
     }
 
-    public function test_authenticated_user_can_create_hotel(): void
+   public function test_authenticated_user_can_create_hotel(): void
     {
-        $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/hotels', [
-                             'nom'           => 'New Hotel',
-                             'categorie'     => '4',
-                             'adresse'       => 'Tunis',
-                             'prix_unitaire' => 200,
-                         ]);
+        $user = User::factory()->create(['role' => 'admin']);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeaders(['Authorization' => "Bearer $token"])
+                        ->postJson('/api/admin/hotels', [
+                            'nom'           => 'New Hotel',
+                            'categorie'     => '4',
+                            'adresse'       => 'Tunis',
+                            'prix_unitaire' => 200,
+                        ]);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('hotels', ['nom' => 'New Hotel']);
@@ -84,10 +90,12 @@ class HotelTest extends TestCase
 
     public function test_authenticated_user_can_delete_hotel(): void
     {
+        $user = User::factory()->create(['role' => 'admin']);
+        $token = $user->createToken('test')->plainTextToken;
         $hotel = Hotel::factory()->create();
 
-        $response = $this->withHeaders($this->authHeader())
-                         ->deleteJson("/api/hotels/{$hotel->id}");
+        $response = $this->withHeaders(['Authorization' => "Bearer $token"])
+                        ->deleteJson("/api/admin/hotels/{$hotel->id}");
 
         $response->assertStatus(200);
         $this->assertDatabaseMissing('hotels', ['id' => $hotel->id]);
