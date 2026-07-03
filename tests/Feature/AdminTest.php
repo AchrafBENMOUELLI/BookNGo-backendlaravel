@@ -17,12 +17,16 @@ class AdminTest extends TestCase
     private string $token;
 
     protected function setUp(): void
-    {
-        parent::setUp();
-        Http::fake();
-        $this->admin = User::factory()->create(['role' => 'admin']);
-        $this->token = $this->admin->createToken('test')->plainTextToken;
-    }
+{
+    parent::setUp();
+
+    Http::fake([
+        '*' => Http::response(['message' => 'ok'], 200), // ← fake ALL http calls
+    ]);
+
+    $this->admin = User::factory()->create(['role' => 'admin']);
+    $this->token = $this->admin->createToken('test')->plainTextToken;
+}
 
     private function authHeader(): array
     {

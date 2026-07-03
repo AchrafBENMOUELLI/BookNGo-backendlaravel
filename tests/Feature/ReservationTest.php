@@ -18,15 +18,17 @@ class ReservationTest extends TestCase
     private Hotel $hotel;
 
     protected function setUp(): void
-    {
-        parent::setUp();
+        {
+            parent::setUp();
 
-        Http::fake();
+            Http::fake([
+                '*' => Http::response(['message' => 'ok'], 200), // ← fake ALL http calls
+            ]);
 
-        $this->user  = User::factory()->create();
-        $this->token = $this->user->createToken('test')->plainTextToken;
-        $this->hotel = Hotel::factory()->create(['prix_unitaire' => 200]);
-    }
+            $this->user  = User::factory()->create();
+            $this->token = $this->user->createToken('test')->plainTextToken;
+            $this->hotel = Hotel::factory()->create(['prix_unitaire' => 200]);
+        }
 
     private function authHeader(): array
     {
