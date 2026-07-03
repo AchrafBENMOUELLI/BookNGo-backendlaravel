@@ -6,6 +6,7 @@ use App\Models\Reservation;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ReservationService
 {
@@ -48,22 +49,42 @@ class ReservationService
     return $reservation;
 }
 
-    public function update(int $id, array $data): Reservation
-    {
-        $reservation = Reservation::findOrFail($id);
+  public function update(int $id, array $data): Reservation
+{
+    $reservation = Reservation::findOrFail($id);
 
-        if (isset($data['date_arrivee']) || isset($data['date_depart'])) {
-            $this->checkAvailability(
-                $data['id_hotel'] ?? $reservation->id_hotel,
-                $data['date_arrivee'] ?? $reservation->date_arrivee,
-                $data['date_depart'] ?? $reservation->date_depart,
-                excludeReservationId: $id
-            );
-        }
-
-        $reservation->update($data);
-        return $reservation;
+    if (isset($data['date_arrivee']) || isset($data['date_depart'])) {
+        $this->checkAvailability(
+            $data['id_hotel'] ?? $reservation->id_hotel,
+            $data['date_arrivee'] ?? $reservation->date_arrivee,
+            $data['date_depart'] ?? $reservation->date_depart,
+            excludeReservationId: $id
+        );
     }
+
+    $reservation->update($data);
+
+    if (isset($data['etat'])) {
+        $reservation->load(['user', 'hotel']);
+
+        Log::info('Status changed to: ' . $data['etat']);
+        Log::info('Calling webhook: ' . config('services.n8n.status_webhook_url'));
+
+        $response = Http::post(config('services.n8n.status_webhook_url'), [
+            'user_name'    => $reservation->user->name,
+            'email'        => $reservation->user->email,
+            'hotel_nom'    => $reservation->hotel->nom,
+            'date_arrivee' => $reservation->date_arrivee,
+            'date_depart'  => $reservation->date_depart,
+            'etat'         => $reservation->etat,
+            'prix'         => $reservation->prix,
+        ]);
+
+        Log::info('Webhook response: ' . $response->status());
+    }
+
+    return $reservation;
+}
 
     public function delete(int $id): void
     {
