@@ -170,4 +170,130 @@ class AdminTest extends TestCase
             'etat' => 'confirmee',
         ]);
     }
+
+    public function test_admin_can_delete_reservation(): void
+    {
+        $user        = User::factory()->create();
+        $hotel       = Hotel::factory()->create();
+        $reservation = Reservation::factory()->create([
+            'id_user'  => $user->id,
+            'id_hotel' => $hotel->id,
+        ]);
+
+        $response = $this->withHeaders($this->authHeader())
+                         ->deleteJson("/api/admin/reservations/{$reservation->id}");
+
+        $response->assertStatus(200);
+        $this->assertDatabaseMissing('reservations', ['id' => $reservation->id]);
+    }
+
+    public function test_admin_can_update_user(): void
+    {
+        $user = User::factory()->create(['name' => 'Original Name', 'role' => 'user']);
+
+        $response = $this->withHeaders($this->authHeader())
+                         ->putJson("/api/admin/users/{$user->id}", [
+                             'name' => 'Updated Name',
+                             'role' => 'admin',
+                         ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('users', [
+            'id'   => $user->id,
+            'name' => 'Updated Name',
+            'role' => 'admin',
+        ]);
+    }
+
+    public function test_non_admin_cannot_update_user(): void
+    {
+        $adminUser = User::factory()->create(['role' => 'user']);
+        $token     = $adminUser->createToken('test')->plainTextToken;
+
+        $target = User::factory()->create();
+
+        $response = $this->withHeaders(['Authorization' => "Bearer $token"])
+                         ->putJson("/api/admin/users/{$target->id}", [
+                             'name' => 'Hacked Name',
+                         ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_cannot_create_user_without_name(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->postJson('/api/admin/users', [
+                             'email'    => 'test@test.com',
+                             'password' => 'password123',
+                             'role'     => 'user',
+                         ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_admin_cannot_create_user_with_short_password(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->postJson('/api/admin/users', [
+                             'name'     => 'Test',
+                             'email'    => 'test@test.com',
+                             'password' => '1234567',
+                             'role'     => 'user',
+                         ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_admin_cannot_create_user_with_invalid_role(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->postJson('/api/admin/users', [
+                             'name'     => 'Test',
+                             'email'    => 'test@test.com',
+                             'password' => 'password123',
+                             'role'     => 'superadmin',
+                         ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_admin_cannot_delete_nonexistent_user(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->deleteJson('/api/admin/users/99999');
+        $response->assertStatus(404);
+    }
+
+    public function test_admin_cannot_update_nonexistent_user(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->putJson('/api/admin/users/99999', ['name' => 'Ghost']);
+        $response->assertStatus(404);
+    }
+
+    public function test_admin_cannot_update_nonexistent_hotel(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->putJson('/api/admin/hotels/99999', ['nom' => 'Ghost']);
+        $response->assertStatus(404);
+    }
+
+    public function test_admin_cannot_delete_nonexistent_hotel(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->deleteJson('/api/admin/hotels/99999');
+        $response->assertStatus(404);
+    }
+
+    public function test_admin_cannot_update_nonexistent_reservation(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->patchJson('/api/admin/reservations/99999', ['etat' => 'confirmee']);
+        $response->assertStatus(404);
+    }
+
+    public function test_admin_cannot_delete_nonexistent_reservation(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->deleteJson('/api/admin/reservations/99999');
+        $response->assertStatus(404);
+    }
 }

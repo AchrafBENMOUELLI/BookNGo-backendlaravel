@@ -115,4 +115,70 @@ class ReservationTest extends TestCase
             'etat' => 'annulee',
         ]);
     }
+
+    public function test_unauthenticated_user_cannot_create_reservation(): void
+    {
+        $response = $this->postJson('/api/reservations', [
+            'id_hotel' => $this->hotel->id,
+        ]);
+        $response->assertStatus(401);
+    }
+
+    public function test_cannot_create_reservation_without_required_fields(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->postJson('/api/reservations', []);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_create_reservation_with_past_date(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->postJson('/api/reservations', [
+                             'id_user'        => $this->user->id,
+                             'id_hotel'       => $this->hotel->id,
+                             'date_arrivee'   => '2020-01-10',
+                             'date_depart'    => '2020-01-15',
+                             'nombre_adultes' => 2,
+                             'nbr_chambre'    => 1,
+                             'prix'           => 1000,
+                         ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_create_reservation_with_invalid_hotel(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->postJson('/api/reservations', [
+                             'id_user'        => $this->user->id,
+                             'id_hotel'       => 99999,
+                             'date_arrivee'   => '2027-06-10',
+                             'date_depart'    => '2027-06-15',
+                             'nombre_adultes' => 2,
+                             'nbr_chambre'    => 1,
+                             'prix'           => 1000,
+                         ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_show_nonexistent_reservation(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->getJson('/api/reservations/99999');
+        $response->assertStatus(404);
+    }
+
+    public function test_cannot_update_nonexistent_reservation(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->patchJson('/api/reservations/99999', ['etat' => 'confirmee']);
+        $response->assertStatus(404);
+    }
+
+    public function test_cannot_delete_nonexistent_reservation(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->deleteJson('/api/reservations/99999');
+        $response->assertStatus(404);
+    }
 }

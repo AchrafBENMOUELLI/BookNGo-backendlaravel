@@ -84,4 +84,51 @@ class AuthTest extends TestCase
         $response->assertStatus(200)
                  ->assertJsonFragment(['email' => $user->email]);
     }
+
+    public function test_cannot_register_without_name(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'email'                 => 'test@test.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_register_with_short_password(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'name'                  => 'Test',
+            'email'                 => 'test@test.com',
+            'password'              => '12345',
+            'password_confirmation' => '12345',
+        ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_register_without_password_confirmation(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'name'     => 'Test',
+            'email'    => 'test@test.com',
+            'password' => 'password123',
+        ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_login_without_email(): void
+    {
+        $response = $this->postJson('/api/login', [
+            'password' => 'password123',
+        ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_login_without_password(): void
+    {
+        $response = $this->postJson('/api/login', [
+            'email' => 'test@test.com',
+        ]);
+        $response->assertStatus(422);
+    }
 }

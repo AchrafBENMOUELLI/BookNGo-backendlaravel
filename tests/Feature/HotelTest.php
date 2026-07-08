@@ -100,4 +100,47 @@ class HotelTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseMissing('hotels', ['id' => $hotel->id]);
     }
+
+    public function test_unauthenticated_user_cannot_create_hotel(): void
+    {
+        $response = $this->postJson('/api/admin/hotels', ['nom' => 'Test']);
+        $response->assertStatus(401);
+    }
+
+    public function test_cannot_create_hotel_without_name(): void
+    {
+        $user  = User::factory()->create(['role' => 'admin']);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeaders(['Authorization' => "Bearer $token"])
+                         ->postJson('/api/admin/hotels', []);
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_get_nonexistent_hotel(): void
+    {
+        $response = $this->withHeaders($this->authHeader())
+                         ->getJson('/api/hotels/99999');
+        $response->assertStatus(404);
+    }
+
+    public function test_cannot_update_nonexistent_hotel(): void
+    {
+        $user  = User::factory()->create(['role' => 'admin']);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeaders(['Authorization' => "Bearer $token"])
+                         ->putJson('/api/admin/hotels/99999', ['nom' => 'Test']);
+        $response->assertStatus(404);
+    }
+
+    public function test_cannot_delete_nonexistent_hotel(): void
+    {
+        $user  = User::factory()->create(['role' => 'admin']);
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeaders(['Authorization' => "Bearer $token"])
+                         ->deleteJson('/api/admin/hotels/99999');
+        $response->assertStatus(404);
+    }
 }
