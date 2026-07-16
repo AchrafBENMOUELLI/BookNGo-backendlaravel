@@ -10,10 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\WithFixtures;
 
 class ModelRelationsTest extends TestCase
 {
     use RefreshDatabase;
+    use WithFixtures;
 
     public function test_hotel_has_many_reservations(): void
     {
@@ -83,7 +85,7 @@ class ModelRelationsTest extends TestCase
 
     public function test_hotel_casts_photos_as_array(): void
     {
-        $photos = ['photo1.jpg', 'photo2.jpg'];
+        $photos = $this->loadFixture('models.photos');
         $hotel = Hotel::factory()->create(['photos' => $photos]);
 
         $this->assertIsArray($hotel->photos);
@@ -92,10 +94,11 @@ class ModelRelationsTest extends TestCase
 
     public function test_hotel_casts_prix_unitaire_as_float(): void
     {
-        $hotel = Hotel::factory()->create(['prix_unitaire' => 199.50]);
+        $prix = $this->loadFixture('models.prix_unitaire_float');
+        $hotel = Hotel::factory()->create(['prix_unitaire' => $prix]);
 
         $this->assertIsFloat($hotel->prix_unitaire);
-        $this->assertEquals(199.50, $hotel->prix_unitaire);
+        $this->assertEquals($prix, $hotel->prix_unitaire);
     }
 
     public function test_user_has_default_role_user(): void

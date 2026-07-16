@@ -8,10 +8,12 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use Tests\WithFixtures;
 
 class ReservationTest extends TestCase
 {
     use RefreshDatabase;
+    use WithFixtures;
 
     private User $user;
     private string $token;
@@ -22,7 +24,7 @@ class ReservationTest extends TestCase
             parent::setUp();
 
             Http::fake([
-                '*' => Http::response(['message' => 'ok'], 200), // ← fake ALL http calls
+                '*' => Http::response(['message' => 'ok'], 200),
             ]);
 
             $this->user  = User::factory()->create();
@@ -37,18 +39,12 @@ class ReservationTest extends TestCase
 
     public function test_authenticated_user_can_create_reservation(): void
     {
+        $payload = $this->loadFixture('reservations.create_valid');
+        $payload['id_user'] = $this->user->id;
+        $payload['id_hotel'] = $this->hotel->id;
+
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/reservations', [
-                             'id_user'        => $this->user->id,
-                             'id_hotel'       => $this->hotel->id,
-                             'date_arrivee'   => '2027-01-10',
-                             'date_depart'    => '2027-01-15',
-                             'nombre_adultes' => 2,
-                             'nombre_enfants' => 0,
-                             'nbr_chambre'    => 1,
-                             'prix'           => 1000,
-                             'etat'           => 'en_attente',
-                         ]);
+                         ->postJson('/api/reservations', $payload);
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('reservations', [
@@ -59,25 +55,21 @@ class ReservationTest extends TestCase
 
     public function test_cannot_reserve_with_overlapping_dates(): void
     {
+        $overlapFirst = $this->loadFixture('reservations.overlap_first');
         Reservation::factory()->create([
             'id_hotel'     => $this->hotel->id,
             'id_user'      => $this->user->id,
-            'date_arrivee' => '2027-01-10',
-            'date_depart'  => '2027-01-15',
+            'date_arrivee' => $overlapFirst['date_arrivee'],
+            'date_depart'  => $overlapFirst['date_depart'],
             'etat'         => 'en_attente',
         ]);
 
+        $payload = $this->loadFixture('reservations.overlap_second');
+        $payload['id_user'] = $this->user->id;
+        $payload['id_hotel'] = $this->hotel->id;
+
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/reservations', [
-                             'id_user'        => $this->user->id,
-                             'id_hotel'       => $this->hotel->id,
-                             'date_arrivee'   => '2027-01-12',
-                             'date_depart'    => '2027-01-17',
-                             'nombre_adultes' => 2,
-                             'nombre_enfants' => 0,
-                             'nbr_chambre'    => 1,
-                             'prix'           => 1000,
-                         ]);
+                         ->postJson('/api/reservations', $payload);
 
         $response->assertStatus(422);
     }
@@ -105,9 +97,7 @@ class ReservationTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authHeader())
-                         ->patchJson("/api/reservations/{$reservation->id}", [
-                             'etat' => 'annulee',
-                         ]);
+                         ->patchJson("/api/reservations/{$reservation->id}", $this->loadFixture('reservations.cancel_update'));
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('reservations', [
@@ -127,37 +117,28 @@ class ReservationTest extends TestCase
     public function test_cannot_create_reservation_without_required_fields(): void
     {
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/reservations', []);
+                         ->postJson('/api/reservations', $this->loadFixture('reservations.create_empty'));
         $response->assertStatus(422);
     }
 
     public function test_cannot_create_reservation_with_past_date(): void
     {
+        $payload = $this->loadFixture('reservations.past_dates');
+        $payload['id_user'] = $this->user->id;
+        $payload['id_hotel'] = $this->hotel->id;
+
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/reservations', [
-                             'id_user'        => $this->user->id,
-                             'id_hotel'       => $this->hotel->id,
-                             'date_arrivee'   => '2020-01-10',
-                             'date_depart'    => '2020-01-15',
-                             'nombre_adultes' => 2,
-                             'nbr_chambre'    => 1,
-                             'prix'           => 1000,
-                         ]);
+                         ->postJson('/api/reservations', $payload);
         $response->assertStatus(422);
     }
 
     public function test_cannot_create_reservation_with_invalid_hotel(): void
     {
+        $payload = $this->loadFixture('reservations.invalid_hotel');
+        $payload['id_user'] = $this->user->id;
+
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/reservations', [
-                             'id_user'        => $this->user->id,
-                             'id_hotel'       => 99999,
-                             'date_arrivee'   => '2027-06-10',
-                             'date_depart'    => '2027-06-15',
-                             'nombre_adultes' => 2,
-                             'nbr_chambre'    => 1,
-                             'prix'           => 1000,
-                         ]);
+                         ->postJson('/api/reservations', $payload);
         $response->assertStatus(422);
     }
 

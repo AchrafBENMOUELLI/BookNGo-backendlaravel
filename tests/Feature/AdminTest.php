@@ -8,10 +8,12 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
+use Tests\WithFixtures;
 
 class AdminTest extends TestCase
 {
     use RefreshDatabase;
+    use WithFixtures;
 
     private User $admin;
     private string $token;
@@ -21,7 +23,7 @@ class AdminTest extends TestCase
     parent::setUp();
 
     Http::fake([
-        '*' => Http::response(['message' => 'ok'], 200), // ← fake ALL http calls
+        '*' => Http::response(['message' => 'ok'], 200),
     ]);
 
     $this->admin = User::factory()->create(['role' => 'admin']);
@@ -33,7 +35,6 @@ class AdminTest extends TestCase
         return ['Authorization' => "Bearer {$this->token}"];
     }
 
-    // AdminController
     public function test_admin_can_get_stats(): void
     {
         Hotel::factory()->count(3)->create();
@@ -65,7 +66,6 @@ class AdminTest extends TestCase
         $response->assertStatus(403);
     }
 
-    // UserController
     public function test_admin_can_get_users(): void
     {
         User::factory()->count(3)->create();
@@ -79,12 +79,7 @@ class AdminTest extends TestCase
     public function test_admin_can_create_user(): void
     {
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/admin/users', [
-                             'name'     => 'New User',
-                             'email'    => 'newuser@test.com',
-                             'password' => 'password123',
-                             'role'     => 'user',
-                         ]);
+                         ->postJson('/api/admin/users', $this->loadFixture('users.admin_create_valid'));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('users', ['email' => 'newuser@test.com']);
@@ -93,12 +88,7 @@ class AdminTest extends TestCase
     public function test_admin_can_create_another_admin(): void
     {
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/admin/users', [
-                             'name'     => 'New Admin',
-                             'email'    => 'newadmin@test.com',
-                             'password' => 'password123',
-                             'role'     => 'admin',
-                         ]);
+                         ->postJson('/api/admin/users', $this->loadFixture('users.admin_create_another_admin'));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('users', ['email' => 'newadmin@test.com', 'role' => 'admin']);
@@ -115,24 +105,17 @@ class AdminTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 
-    // Admin hotel management
     public function test_admin_can_update_hotel(): void
     {
         $hotel = Hotel::factory()->create();
 
         $response = $this->withHeaders($this->authHeader())
-                         ->putJson("/api/admin/hotels/{$hotel->id}", [
-                             'nom'           => 'Updated Hotel',
-                             'categorie'     => '5',
-                             'adresse'       => 'New Address',
-                             'prix_unitaire' => 300,
-                         ]);
+                         ->putJson("/api/admin/hotels/{$hotel->id}", $this->loadFixture('hotels.update_valid'));
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('hotels', ['nom' => 'Updated Hotel']);
     }
 
-    // Admin reservation management
     public function test_admin_can_get_all_reservations(): void
     {
         $user  = User::factory()->create();
@@ -160,9 +143,7 @@ class AdminTest extends TestCase
         ]);
 
         $response = $this->withHeaders($this->authHeader())
-                         ->patchJson("/api/admin/reservations/{$reservation->id}", [
-                             'etat' => 'confirmee',
-                         ]);
+                         ->patchJson("/api/admin/reservations/{$reservation->id}", $this->loadFixture('reservations.update_confirmed'));
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('reservations', [
@@ -192,10 +173,7 @@ class AdminTest extends TestCase
         $user = User::factory()->create(['name' => 'Original Name', 'role' => 'user']);
 
         $response = $this->withHeaders($this->authHeader())
-                         ->putJson("/api/admin/users/{$user->id}", [
-                             'name' => 'Updated Name',
-                             'role' => 'admin',
-                         ]);
+                         ->putJson("/api/admin/users/{$user->id}", $this->loadFixture('users.admin_update'));
 
         $response->assertStatus(200);
         $this->assertDatabaseHas('users', [
@@ -213,9 +191,7 @@ class AdminTest extends TestCase
         $target = User::factory()->create();
 
         $response = $this->withHeaders(['Authorization' => "Bearer $token"])
-                         ->putJson("/api/admin/users/{$target->id}", [
-                             'name' => 'Hacked Name',
-                         ]);
+                         ->putJson("/api/admin/users/{$target->id}", $this->loadFixture('users.admin_hacked_update'));
 
         $response->assertStatus(403);
     }
@@ -223,35 +199,21 @@ class AdminTest extends TestCase
     public function test_admin_cannot_create_user_without_name(): void
     {
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/admin/users', [
-                             'email'    => 'test@test.com',
-                             'password' => 'password123',
-                             'role'     => 'user',
-                         ]);
+                         ->postJson('/api/admin/users', $this->loadFixture('users.admin_create_missing_name'));
         $response->assertStatus(422);
     }
 
     public function test_admin_cannot_create_user_with_short_password(): void
     {
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/admin/users', [
-                             'name'     => 'Test',
-                             'email'    => 'test@test.com',
-                             'password' => '1234567',
-                             'role'     => 'user',
-                         ]);
+                         ->postJson('/api/admin/users', $this->loadFixture('users.admin_create_short_password'));
         $response->assertStatus(422);
     }
 
     public function test_admin_cannot_create_user_with_invalid_role(): void
     {
         $response = $this->withHeaders($this->authHeader())
-                         ->postJson('/api/admin/users', [
-                             'name'     => 'Test',
-                             'email'    => 'test@test.com',
-                             'password' => 'password123',
-                             'role'     => 'superadmin',
-                         ]);
+                         ->postJson('/api/admin/users', $this->loadFixture('users.admin_create_invalid_role'));
         $response->assertStatus(422);
     }
 

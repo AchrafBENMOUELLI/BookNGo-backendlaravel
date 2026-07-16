@@ -1,0 +1,190 @@
+{
+    "users": {
+        "register_valid": {
+            "name": "John Doe",
+            "email": "john@example.com",
+            "password": "password123",
+            "password_confirmation": "password123"
+        },
+        "register_short_password": {
+            "name": "Test",
+            "email": "test@test.com",
+            "password": "12345",
+            "password_confirmation": "12345"
+        },
+        "register_missing_confirmation": {
+            "name": "Test",
+            "email": "test@test.com",
+            "password": "password123"
+        },
+        "register_missing_name": {
+            "email": "test@test.com",
+            "password": "password123",
+            "password_confirmation": "password123"
+        },
+        "login_valid": {
+            "password": "password123"
+        },
+        "login_wrong_password": {
+            "password": "wrongpassword"
+        },
+        "login_missing_email": {
+            "password": "password123"
+        },
+        "login_missing_password": {
+            "email": "test@test.com"
+        },
+        "admin_create_valid": {
+            "name": "New User",
+            "email": "newuser@test.com",
+            "password": "password123",
+            "role": "user"
+        },
+        "admin_create_another_admin": {
+            "name": "New Admin",
+            "email": "newadmin@test.com",
+            "password": "password123",
+            "role": "admin"
+        },
+        "admin_create_missing_name": {
+            "email": "test@test.com",
+            "password": "password123",
+            "role": "user"
+        },
+        "admin_create_short_password": {
+            "name": "Test",
+            "email": "test@test.com",
+            "password": "1234567",
+            "role": "user"
+        },
+        "admin_create_invalid_role": {
+            "name": "Test",
+            "email": "test@test.com",
+            "password": "password123",
+            "role": "superadmin"
+        },
+        "admin_update": {
+            "name": "Updated Name",
+            "role": "admin"
+        },
+        "admin_hacked_update": {
+            "name": "Hacked Name"
+        }
+    },
+    "hotels": {
+        "create_valid": {
+            "nom": "New Hotel",
+            "categorie": "4",
+            "adresse": "Tunis",
+            "prix_unitaire": 200
+        },
+        "update_valid": {
+            "nom": "Updated Hotel",
+            "categorie": "5",
+            "adresse": "New Address",
+            "prix_unitaire": 300
+        },
+        "create_missing_name": {},
+        "search_palace": {
+            "nom": "Palace Tunis"
+        },
+        "search_beach": {
+            "nom": "Beach Resort"
+        },
+        "filter_categorie_5": {
+            "nom": "Palace Five",
+            "categorie": "5"
+        },
+        "filter_categorie_3": {
+            "nom": "Budget Three",
+            "categorie": "3"
+        }
+    },
+    "reservations": {
+        "create_valid": {
+            "date_arrivee": "2027-01-10",
+            "date_depart": "2027-01-15",
+            "nombre_adultes": 2,
+            "nombre_enfants": 0,
+            "nbr_chambre": 1,
+            "prix": 1000,
+            "etat": "en_attente"
+        },
+        "overlap_first": {
+            "date_arrivee": "2027-01-10",
+            "date_depart": "2027-01-15"
+        },
+        "overlap_second": {
+            "date_arrivee": "2027-01-12",
+            "date_depart": "2027-01-17",
+            "nombre_adultes": 2,
+            "nombre_enfants": 0,
+            "nbr_chambre": 1,
+            "prix": 1000
+        },
+        "past_dates": {
+            "date_arrivee": "2020-01-10",
+            "date_depart": "2020-01-15",
+            "nombre_adultes": 2,
+            "nbr_chambre": 1,
+            "prix": 1000
+        },
+        "invalid_hotel": {
+            "id_hotel": 99999,
+            "date_arrivee": "2027-06-10",
+            "date_depart": "2027-06-15",
+            "nombre_adultes": 2,
+            "nbr_chambre": 1,
+            "prix": 1000
+        },
+        "create_empty": {},
+        "cancel_update": {
+            "etat": "annulee"
+        },
+        "update_confirmed": {
+            "etat": "confirmee"
+        }
+    },
+    "formules": {
+        "create_valid": {
+            "formule": "Demi Pension",
+            "type_chambre": "Suite",
+            "prix_chambre": 200,
+            "prix_formule": 350,
+            "promotion": 10,
+            "periode_debut": "2027-06-01",
+            "periode_fin": "2027-09-30"
+        },
+        "create_missing_fields": {},
+        "create_invalid_hotel": {
+            "hotel_id": 99999,
+            "formule": "Test",
+            "prix_formule": 100
+        },
+        "update_valid": {
+            "prix_formule": 500,
+            "promotion": 20
+        },
+        "update_nonexistent": {
+            "prix_formule": 100
+        },
+        "promotion_calculation": {
+            "prix_formule": 100,
+            "promotion": 20
+        },
+        "no_promotion": {
+            "prix_formule": 100,
+            "promotion": 0
+        },
+        "duree_periode": {
+            "periode_debut": "2027-01-01",
+            "periode_fin": "2027-01-10",
+            "prix_formule": 100,
+            "promotion": 0
+        }
+    },
+    "models": {
+        "photos": ["photo1.jpg", "photo2.jpg"],
+        "prix_unitaire_float": 199.50
+    }
+}

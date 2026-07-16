@@ -6,10 +6,12 @@ use App\Models\Hotel;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\WithFixtures;
 
 class HotelTest extends TestCase
 {
     use RefreshDatabase;
+    use WithFixtures;
 
     private function authHeader(): array
     {
@@ -30,26 +32,25 @@ class HotelTest extends TestCase
     }
 
     public function test_can_filter_hotels_by_categorie(): void
-{
-    Hotel::query()->delete();
+    {
+        Hotel::query()->delete();
 
-    Hotel::factory()->create(['categorie' => '5', 'nom' => 'Palace Five']);
-    Hotel::factory()->create(['categorie' => '3', 'nom' => 'Budget Three']);
+        Hotel::factory()->create($this->loadFixture('hotels.filter_categorie_5'));
+        Hotel::factory()->create($this->loadFixture('hotels.filter_categorie_3'));
 
-    $response = $this->withHeaders($this->authHeader())
-                     ->getJson('/api/hotels?categorie=5&per_page=100');
+        $response = $this->withHeaders($this->authHeader())
+                         ->getJson('/api/hotels?categorie=5&per_page=100');
 
-    $response->assertStatus(200);
-    $data = $response->json('data');
-
-    $filtered = array_filter($data, fn($h) => $h['categorie'] === '5');
-    $this->assertCount(1, array_values($filtered));
-}
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $filtered = array_filter($data, fn($h) => $h['categorie'] === '5');
+        $this->assertCount(1, array_values($filtered));
+    }
 
     public function test_can_search_hotels_by_nom(): void
     {
-        Hotel::factory()->create(['nom' => 'Palace Tunis']);
-        Hotel::factory()->create(['nom' => 'Beach Resort']);
+        Hotel::factory()->create($this->loadFixture('hotels.search_palace'));
+        Hotel::factory()->create($this->loadFixture('hotels.search_beach'));
 
         $response = $this->withHeaders($this->authHeader())
                          ->getJson('/api/hotels?search=Palace');
@@ -71,18 +72,13 @@ class HotelTest extends TestCase
                  ->assertJsonFragment(['nom' => $hotel->nom]);
     }
 
-   public function test_authenticated_user_can_create_hotel(): void
+    public function test_authenticated_user_can_create_hotel(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
         $token = $user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders(['Authorization' => "Bearer $token"])
-                        ->postJson('/api/admin/hotels', [
-                            'nom'           => 'New Hotel',
-                            'categorie'     => '4',
-                            'adresse'       => 'Tunis',
-                            'prix_unitaire' => 200,
-                        ]);
+                        ->postJson('/api/admin/hotels', $this->loadFixture('hotels.create_valid'));
 
         $response->assertStatus(201);
         $this->assertDatabaseHas('hotels', ['nom' => 'New Hotel']);
@@ -113,7 +109,7 @@ class HotelTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $response = $this->withHeaders(['Authorization' => "Bearer $token"])
-                         ->postJson('/api/admin/hotels', []);
+                         ->postJson('/api/admin/hotels', $this->loadFixture('hotels.create_missing_name'));
         $response->assertStatus(422);
     }
 

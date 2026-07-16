@@ -5,19 +5,16 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\WithFixtures;
 
 class AuthTest extends TestCase
 {
     use RefreshDatabase;
+    use WithFixtures;
 
     public function test_user_can_register(): void
     {
-        $response = $this->postJson('/api/register', [
-            'name'                  => 'John Doe',
-            'email'                 => 'john@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
-        ]);
+        $response = $this->postJson('/api/register', $this->loadFixture('users.register_valid'));
 
         $response->assertStatus(201)
                  ->assertJsonStructure(['user', 'token']);
@@ -25,14 +22,10 @@ class AuthTest extends TestCase
 
     public function test_user_cannot_register_with_existing_email(): void
     {
-        User::factory()->create(['email' => 'john@example.com']);
+        $fixture = $this->loadFixture('users.register_valid');
+        User::factory()->create(['email' => $fixture['email']]);
 
-        $response = $this->postJson('/api/register', [
-            'name'                  => 'John Doe',
-            'email'                 => 'john@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
-        ]);
+        $response = $this->postJson('/api/register', $fixture);
 
         $response->assertStatus(422);
     }
@@ -40,11 +33,10 @@ class AuthTest extends TestCase
     public function test_user_can_login(): void
     {
         $user = User::factory()->create(['password' => bcrypt('password123')]);
+        $payload = $this->loadFixture('users.login_valid');
+        $payload['email'] = $user->email;
 
-        $response = $this->postJson('/api/login', [
-            'email'    => $user->email,
-            'password' => 'password123',
-        ]);
+        $response = $this->postJson('/api/login', $payload);
 
         $response->assertStatus(200)
                  ->assertJsonStructure(['user', 'token']);
@@ -53,11 +45,10 @@ class AuthTest extends TestCase
     public function test_user_cannot_login_with_wrong_password(): void
     {
         $user = User::factory()->create(['password' => bcrypt('password123')]);
+        $payload = $this->loadFixture('users.login_wrong_password');
+        $payload['email'] = $user->email;
 
-        $response = $this->postJson('/api/login', [
-            'email'    => $user->email,
-            'password' => 'wrongpassword',
-        ]);
+        $response = $this->postJson('/api/login', $payload);
 
         $response->assertStatus(422);
     }
@@ -87,48 +78,31 @@ class AuthTest extends TestCase
 
     public function test_cannot_register_without_name(): void
     {
-        $response = $this->postJson('/api/register', [
-            'email'                 => 'test@test.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
-        ]);
+        $response = $this->postJson('/api/register', $this->loadFixture('users.register_missing_name'));
         $response->assertStatus(422);
     }
 
     public function test_cannot_register_with_short_password(): void
     {
-        $response = $this->postJson('/api/register', [
-            'name'                  => 'Test',
-            'email'                 => 'test@test.com',
-            'password'              => '12345',
-            'password_confirmation' => '12345',
-        ]);
+        $response = $this->postJson('/api/register', $this->loadFixture('users.register_short_password'));
         $response->assertStatus(422);
     }
 
     public function test_cannot_register_without_password_confirmation(): void
     {
-        $response = $this->postJson('/api/register', [
-            'name'     => 'Test',
-            'email'    => 'test@test.com',
-            'password' => 'password123',
-        ]);
+        $response = $this->postJson('/api/register', $this->loadFixture('users.register_missing_confirmation'));
         $response->assertStatus(422);
     }
 
     public function test_cannot_login_without_email(): void
     {
-        $response = $this->postJson('/api/login', [
-            'password' => 'password123',
-        ]);
+        $response = $this->postJson('/api/login', $this->loadFixture('users.login_missing_email'));
         $response->assertStatus(422);
     }
 
     public function test_cannot_login_without_password(): void
     {
-        $response = $this->postJson('/api/login', [
-            'email' => 'test@test.com',
-        ]);
+        $response = $this->postJson('/api/login', $this->loadFixture('users.login_missing_password'));
         $response->assertStatus(422);
     }
 }
