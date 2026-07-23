@@ -130,12 +130,12 @@
             "prix": 1000
         },
         "invalid_hotel": {
-            "id_hotel": 99999,
             "date_arrivee": "2027-06-10",
             "date_depart": "2027-06-15",
             "nombre_adultes": 2,
             "nbr_chambre": 1,
-            "prix": 1000
+            "prix": 1000,
+            "id_hotel": 99999
         },
         "create_empty": {},
         "cancel_update": {
@@ -157,9 +157,9 @@
         },
         "create_missing_fields": {},
         "create_invalid_hotel": {
-            "hotel_id": 99999,
             "formule": "Test",
-            "prix_formule": 100
+            "prix_formule": 100,
+            "hotel_id": 99999
         },
         "update_valid": {
             "prix_formule": 500,
@@ -177,14 +177,17 @@
             "promotion": 0
         },
         "duree_periode": {
-            "periode_debut": "2027-01-01",
-            "periode_fin": "2027-01-10",
             "prix_formule": 100,
-            "promotion": 0
+            "promotion": 0,
+            "periode_debut": "2027-01-01",
+            "periode_fin": "2027-01-10"
         }
     },
     "models": {
-        "photos": ["photo1.jpg", "photo2.jpg"],
-        "prix_unitaire_float": 199.50
+        "photos": [
+            "photo1.jpg",
+            "photo2.jpg"
+        ],
+        "prix_unitaire_float": 199.5
     }
 }
